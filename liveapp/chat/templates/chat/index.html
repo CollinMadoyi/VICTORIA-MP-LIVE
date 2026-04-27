@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniChat | Connect</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --void: #080b10;
+            --surface: #0d1117;
+            --panel: #111820;
+            --border: rgba(255,255,255,0.06);
+            --border-hot: rgba(99,210,255,0.3);
+            --accent: #63d2ff;
+            --accent-dim: rgba(99,210,255,0.12);
+            --accent-glow: rgba(99,210,255,0.25);
+            --hot: #ff4d6d;
+            --hot-dim: rgba(255,77,109,0.15);
+            --text: #e8edf3;
+            --text-muted: #5a6a7e;
+            --text-soft: #8899aa;
+            --success: #00d68f;
+            --radius: 14px;
+            --mono: 'DM Mono', monospace;
+            --sans: 'Syne', sans-serif;
+        }
+
+        body {
+            font-family: var(--sans);
+            background: var(--void);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ambient background grain */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                radial-gradient(ellipse 80% 50% at 10% 0%, rgba(99,210,255,0.04) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 60% at 90% 100%, rgba(255,77,109,0.03) 0%, transparent 60%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── HEADER ── */
+        header {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            height: 56px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(13,17,23,0.8);
+            backdrop-filter: blur(20px);
+            flex-shrink: 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .logo-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 12px var(--accent);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.8); }
+        }
+
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            color: var(--text-soft);
+        }
+
+        .user-chip::before {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success);
+        }
+
+        .logout-link {
+            color: var(--hot);
+            text-decoration: none;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .logout-link:hover { opacity: 1; }
+
+        /* ── STATUS BAR ── */
+        #statusBar {
+            position: relative;
+            z-index: 10;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            background: rgba(8,11,16,0.5);
+            flex-shrink: 0;
+            transition: color 0.4s;
+        }
+
+        #statusBar.connected { color: var(--success); }
+        #statusBar.searching { color: var(--accent); }
+
+        .status-blink {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* ── MAIN LAYOUT ── */
+        main {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 0;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        /* ── VIDEO SECTION ── */
+        .video-section {
+            position: relative;
+            background: #000;
+            overflow: hidden;
+        }
+
+        #remoteVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .video-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        /* Scanline effect */
+        .video-overlay::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.03) 2px,
+                rgba(0,0,0,0.03) 4px
+            );
+        }
+
+        /* Corner brackets */
+        .corner {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            border-color: var(--accent);
+            border-style: solid;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .video-section:hover .corner { opacity: 1; }
+
+        .corner-tl { top: 16px; left: 16px; border-width: 2px 0 0 2px; }
+        .corner-tr { top: 16px; right: 16px; border-width: 2px 2px 0 0; }
+        .corner-bl { bottom: 16px; left: 16px; border-width: 0 0 2px 2px; }
+        .corner-br { bottom: 16px; right: 16px; border-width: 0 2px 2px 0; }
+
+        /* Waiting state overlay */
+        #waitingOverlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            background: var(--void);
+            color: var(--text-muted);
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            transition: opacity 0.5s;
+        }
+
+        .waiting-ring {
+            width: 60px; height: 60px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1.2s linear infinite;
+            display: none;
+        }
+
+        #waitingOverlay.searching .waiting-ring { display: block; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .waiting-glyph {
+            font-size: 2.5rem;
+            opacity: 0.15;
+        }
+
+        /* Local video PiP */
+        /* Increased size for the user camera */
+#localVideo {
+    position: absolute;
+    bottom: 40px;   /* Increased from 20px */
+    right: 40px;    /* Increased from 20px */
+    width: 260px;   /* Increased from 180px */
+    height: 160px;  /* Increased from 120px */
+    object-fit: cover;
+    border-radius: 12px; /* Slightly smoother corners */
+    border: 2px solid var(--border-hot); /* Thicker border to match size */
+    box-shadow: 
+        0 12px 48px rgba(0,0,0,0.8), 
+        0 0 0 1px rgba(99,210,255,0.2);
+    z-index: 20; /* Ensure it stays above the video-overlay corners */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced hover effect for the larger window */
+#localVideo:hover {
+    transform: scale(1.05) translateY(-5px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 30px var(--accent-glow);
+}
+        #localVideo:hover {
+            transform: scale(1.03);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 20px var(--accent-glow);
+        }
+
+        /* Partner label */
+        .partner-label {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            background: rgba(8,11,16,0.7);
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid var(--border);
+            background: var(--panel);
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        #msgCount {
+            background: var(--accent-dim);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-size: 0.68rem;
+        }
+
+        /* Messages */
+        #messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            scroll-behavior: smooth;
+        }
+
+        #messages::-webkit-scrollbar { width: 3px; }
+        #messages::-webkit-scrollbar-track { background: transparent; }
+        #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .msg {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            animation: msg-in 0.25s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes msg-in {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-sender {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 0 2px;
+        }
+
+        .msg-bubble {
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            max-width: 100%;
+            word-break: break-word;
+        }
+
+        .msg.you .msg-bubble {
+            background: var(--accent-dim);
+            border: 1px solid rgba(99,210,255,0.15);
+            color: var(--text);
+            align-self: flex-end;
+        }
+        .msg.you .msg-sender { text-align: right; color: var(--accent); opacity: 0.7; }
+
+        .msg.partner .msg-bubble {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .msg.system .msg-bubble {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            text-align: center;
+            letter-spacing: 0.05em;
+            padding: 4px 0;
+        }
+
+        .msg.system.event .msg-bubble {
+            color: var(--accent);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 6px 12px;
+            margin: 4px 0;
+        }
+
+        /* Input area */
+        .input-area {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        #chatInput {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+            font-family: var(--sans);
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        #chatInput:focus {
+            border-color: var(--border-hot);
+            background: rgba(99,210,255,0.04);
+        }
+
+        #chatInput::placeholder { color: var(--text-muted); }
+
+        #sendBtn {
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            border: 1px solid var(--border-hot);
+            background: var(--accent-dim);
+            color: var(--accent);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s, transform 0.15s;
+            flex-shrink: 0;
+        }
+        #sendBtn:hover { background: rgba(99,210,255,0.2); transform: scale(1.05); }
+        #sendBtn svg { width: 16px; height: 16px; }
+
+        /* ── CONTROLS ── */
+        .controls {
+            position: relative;
+            z-index: 10;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            border-top: 1px solid var(--border);
+            background: rgba(13,17,23,0.9);
+            backdrop-filter: blur(20px);
+            flex-shrink: 0;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: white;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .btn:hover::after { opacity: 0.04; }
+        .btn:active { transform: scale(0.97); }
+
+        #startBtn {
+            background: rgba(0,214,143,0.12);
+            border-color: rgba(0,214,143,0.3);
+            color: var(--success);
+        }
+
+        #nextBtn {
+            background: var(--accent-dim);
+            border-color: var(--border-hot);
+            color: var(--accent);
+        }
+
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+        /* Divider */
+        .ctrl-sep {
+            width: 1px;
+            height: 24px;
+            background: var(--border);
+        }
+
+        /* ── COUNTER ── */
+        .online-count {
+            position: absolute;
+            right: 1.5rem;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .online-count::before {
+            content: '';
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: var(--success);
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="logo">
+        <div class="logo-dot"></div>
+        VU 4U CHAT 
+    </div>
+    <div class="header-meta">
+        <div class="user-chip">{{ request.user.username }}</div>
+        <div class="header-meta">
+    <div class="user-chip">{{ request.user.username }}</div>
+    
+    <form action="{% url 'logout' %}" method="post" id="logoutForm" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="logout-link" style="background: none; border: none; cursor: pointer; padding: 0;">
+            Exit
+        </button>
+    </form>
+</div>
+    </div>
+</header>
+
+<!-- STATUS -->
+<div id="statusBar">
+    <div class="status-blink"></div>
+    <span id="statusText">Idle — Click find to connect</span>
+</div>
+
+<!-- MAIN -->
+<main>
+    <!-- VIDEO SECTION -->
+    <div class="video-section">
+        <video id="remoteVideo" autoplay playsinline></video>
+
+        <div id="waitingOverlay">
+            <div class="waiting-ring"></div>
+            <div class="waiting-glyph">◎</div>
+            <span id="overlayText">Waiting for connection</span>
+        </div>
+
+        <div class="video-overlay">
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+        </div>
+
+        <div class="partner-label" id="partnerLabel">No partner</div>
+
+        <video id="localVideo" autoplay playsinline muted></video>
+    </div>
+
+    <!-- SIDEBAR / CHAT -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <span>Chat</span>
+            <span id="msgCount">0</span>
+        </div>
+
+        <div id="messages"></div>
+
+        <div class="input-area">
+            <input type="text" id="chatInput" placeholder="Message..." autocomplete="off">
+            <button id="sendBtn" title="Send">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</main>
+
+<!-- CONTROLS -->
+<div class="controls">
+    <button class="btn" id="startBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        Find Partner
+    </button>
+    <div class="ctrl-sep"></div>
+    <button class="btn" id="nextBtn" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="5 1 12 8 5 15"/><line x1="19" y1="1" x2="19" y2="15"/>
+        </svg>
+        Next
+    </button>
+    <span class="online-count" id="onlineCount">Online</span>
+</div>
+
+<script>
+    const socket = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/chat/');
+    let localStream, peerConnection;
+    const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+    const messagesDiv = document.getElementById('messages');
+    const statusBar = document.getElementById('statusBar');
+    const statusText = document.getElementById('statusText');
+    const waitingOverlay = document.getElementById('waitingOverlay');
+    const overlayText = document.getElementById('overlayText');
+    const partnerLabel = document.getElementById('partnerLabel');
+    const msgCount = document.getElementById('msgCount');
+    const nextBtn = document.getElementById('nextBtn');
+    const startBtn = document.getElementById('startBtn');
+    let messageCount = 0;
+
+    function setStatus(state, text) {
+        statusBar.className = state;
+        statusText.textContent = text;
+    }
+
+    function showOverlay(searching, text) {
+        waitingOverlay.style.display = 'flex';
+        waitingOverlay.style.opacity = '1';
+        overlayText.textContent = text;
+        waitingOverlay.className = searching ? 'searching' : '';
+    }
+
+    function hideOverlay() {
+        waitingOverlay.style.opacity = '0';
+        setTimeout(() => { waitingOverlay.style.display = 'none'; }, 500);
+    }
+
+    async function initMedia() {
+        if (!localStream) {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            document.getElementById('localVideo').srcObject = localStream;
+        }
+    }
+
+    function createPeer() {
+        peerConnection = new RTCPeerConnection(config);
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+        peerConnection.onicecandidate = (e) => {
+            if (e.candidate) socket.send(JSON.stringify({ 'action': 'signal', 'candidate': e.candidate }));
+        };
+
+        peerConnection.ontrack = (e) => {
+            document.getElementById('remoteVideo').srcObject = e.streams[0];
+            hideOverlay();
+            setStatus('connected', 'Connected to partner');
+            partnerLabel.textContent = 'Partner';
+        };
+
+        peerConnection.onconnectionstatechange = () => {
+            if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+                showOverlay(false, 'Partner disconnected');
+                setStatus('', 'Partner disconnected');
+                partnerLabel.textContent = 'No partner';
+                appendMessage('system', null, '— Partner disconnected —');
+            }
+        };
+    }
+
+    socket.onmessage = async (e) => {
+        const data = JSON.parse(e.data);
+
+        if (data.action === 'match_found') {
+            appendMessage('system event', null, '✦ Match found — connecting');
+            setStatus('searching', 'Establishing connection...');
+            nextBtn.disabled = false;
+            createPeer();
+            if (data.is_initiator) {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                socket.send(JSON.stringify({ 'action': 'signal', 'sdp': offer }));
+            }
+        } else if (data.sdp) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            if (data.sdp.type === 'offer') {
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                socket.send(JSON.stringify({ 'action': 'signal', 'sdp': answer }));
+            }
+        } else if (data.candidate) {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } else if (data.action === 'chat_message') {
+            appendMessage('partner', 'Partner', data.message);
+        }
+    };
+
+    function appendMessage(type, sender, text) {
+        const msg = document.createElement('div');
+        msg.className = `msg ${type}`;
+
+        if (type !== 'system' && type !== 'system event' && sender) {
+            const senderEl = document.createElement('div');
+            senderEl.className = 'msg-sender';
+            senderEl.textContent = sender;
+            msg.appendChild(senderEl);
+        }
+
+        const bubble = document.createElement('div');
+        bubble.className = 'msg-bubble';
+        bubble.textContent = text;
+        msg.appendChild(bubble);
+
+        messagesDiv.appendChild(msg);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+        if (type !== 'system') {
+            messageCount++;
+            msgCount.textContent = messageCount;
+        }
+    }
+
+    startBtn.onclick = () => {
+        initMedia().then(() => {
+            showOverlay(true, 'Searching for a partner...');
+            setStatus('searching', 'Searching...');
+            socket.send(JSON.stringify({ 'action': 'find_match' }));
+        });
+    };
+
+    nextBtn.onclick = () => {
+        if (peerConnection) { peerConnection.close(); peerConnection = null; }
+        showOverlay(true, 'Finding next partner...');
+        setStatus('searching', 'Finding next partner...');
+        partnerLabel.textContent = 'No partner';
+        nextBtn.disabled = true;
+        socket.send(JSON.stringify({ 'action': 'find_match' }));
+    };
+
+    document.getElementById('sendBtn').onclick = sendMessage;
+    document.getElementById('chatInput').onkeydown = (e) => { if (e.key === 'Enter') sendMessage(); };
+
+    function sendMessage() {
+        const input = document.getElementById('chatInput');
+        const msg = input.value.trim();
+        if (msg) {
+            socket.send(JSON.stringify({ 'action': 'chat_message', 'message': msg }));
+            appendMessage('you', 'You', msg);
+            input.value = '';
+        }
+    }
+
+    // Initial state
+    showOverlay(false, 'Waiting for connection');
+    appendMessage('system', null, 'Click "Find Partner" to begin');
+// Add this to your JavaScript
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        // Send this info to your Django backend via WebSocket
+        socket.send(JSON.stringify({
+            'action': 'update_location',
+            'latitude': lat,
+            'longitude': lng
+        }));
+    });
+}    
+</script>
+</body>
+</html>

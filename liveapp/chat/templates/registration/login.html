@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | UniChat</title>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; }
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: 'Segoe UI', sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0;
+        }
+        .login-box { 
+            background: var(--card); 
+            padding: 2.5rem; 
+            border-radius: 16px; 
+            width: 100%;
+            max-width: 400px; 
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); 
+            border: 1px solid #334155;
+        }
+        h2 { text-align: center; margin-bottom: 2rem; font-weight: 600; }
+        
+        /* Styling the auto-generated Django form labels and inputs */
+        form p { margin-bottom: 1rem; }
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin-top: 6px;
+            border-radius: 8px; 
+            border: 1px solid #334155; 
+            background: #0f172a; 
+            color: white; 
+            box-sizing: border-box; 
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--accent); outline: none; }
+        
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            background: var(--accent); 
+            border: none; 
+            color: white; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            font-size: 1rem;
+            cursor: pointer; 
+            margin-top: 1rem;
+            transition: background 0.3s;
+        }
+        button:hover { background: #2563eb; }
+        
+        .errorlist { color: #ef4444; list-style: none; padding: 0; font-size: 0.85rem; margin-bottom: 1rem; }
+        
+        .links { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: #94a3b8; }
+        .links a { color: var(--accent); text-decoration: none; }
+        .links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2>Login to UniChat</h2>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <ul class="errorlist">
+                    <li>Your username and password didn't match. Please try again.</li>
+                </ul>
+            {% endif %}
+
+            {{ form.as_p }}
+            
+            <button type="submit">Log In</button>
+        </form>
+
+        <div class="links">
+            Don't have an account? <a href="{% url 'signup' %}">Sign up now</a>
+        </div>
+    </div>
+</body>
+</html>

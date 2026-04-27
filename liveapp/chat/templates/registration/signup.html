@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Sign Up | UniChat</title>
+    <style>
+        body { background: #0f172a; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .box { background: #1e293b; padding: 2rem; border-radius: 12px; width: 350px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); }
+        h2 { text-align: center; margin-bottom: 1.5rem; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #3b82f6; border: none; color: white; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .links { text-align: center; margin-top: 1rem; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Create Account</h2>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Sign Up</button>
+        </form>
+        <div class="links">
+            Already have an account? <a href="{% url 'login' %}" style="color: #3b82f6;">Login</a>
+        </div>
+    </div>
+</body>
+</html>
